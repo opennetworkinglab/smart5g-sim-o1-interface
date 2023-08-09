@@ -22,7 +22,7 @@ LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@hig
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     # basic tools
-    tzdata build-essential git cmake pkg-config \
+    tzdata build-essential git cmake pkg-config wget \
     # libyang dependencies
     libpcre3-dev \
     # libssh dependencies
@@ -47,7 +47,8 @@ RUN \
     git clone --single-branch --branch libssh-0.9.2 https://git.libssh.org/projects/libssh.git && \
     git clone --single-branch --branch v1.1.46 https://github.com/CESNET/libnetconf2.git && \
     git clone --single-branch --branch v1.1.76 https://github.com/CESNET/netopeer2.git && \
-    git clone --single-branch --branch curl-7_72_0 https://github.com/curl/curl.git
+    git clone --single-branch --branch curl-7_72_0 https://github.com/curl/curl.git && \
+    git clone --single-branch --branch jmajnert-patch-1 https://github.com/jmajnert/onos-cli.git
 
 # build and install cJSON
 RUN \
@@ -122,6 +123,18 @@ RUN \
     cp regxstring /usr/bin && \
     cd ..
 
+# go 1.20 and onos-cli
+RUN \
+    wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz && \
+    tar -xvf go1.20.2.linux-amd64.tar.gz && \
+    rm go1.20.2.linux-amd64.tar.gz && \
+    cd /opt/dev/onos-cli/ && \
+    GOROOT="/opt/dev/go" PATH="/opt/dev/go/bin:$PATH" make && \
+    cp /opt/dev/onos-cli/build/_output/onos /usr/bin && \
+    cd /opt/dev/ && \
+    rm -rf /opt/dev/onos-cli/ && \
+    rm -rf /opt/dev/go
+
 # ntsim-ng copy and build
 ARG BUILD_WITH_DEBUG
 ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
@@ -132,6 +145,7 @@ RUN \
     mkdir /opt/dev/ntsim-ng/source
 COPY ./ntsim-ng /opt/dev/ntsim-ng/source
 COPY ./deploy/base/build_ntsim-ng.sh /opt/dev/ntsim-ng/build_ntsim-ng.sh
+COPY ./ntsim-ng/features/onos_cli_wrapper/onos-cli-wrapper.sh /usr/bin
 RUN \
     cd /opt/dev/ntsim-ng && \
     sed -i '/argp/d' build_ntsim-ng.sh && \
