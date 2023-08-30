@@ -130,7 +130,7 @@ RUN \
     rm go1.20.2.linux-amd64.tar.gz && \
     cd /opt/dev/onos-cli/ && \
     GOROOT="/opt/dev/go" PATH="/opt/dev/go/bin:$PATH" make && \
-    cp /opt/dev/onos-cli/build/_output/onos /usr/bin && \
+    cp /opt/dev/onos-cli/build/_output/onos /usr/local/bin && \
     cd /opt/dev/ && \
     rm -rf /opt/dev/onos-cli/ && \
     rm -rf /opt/dev/go
@@ -145,7 +145,7 @@ RUN \
     mkdir /opt/dev/ntsim-ng/source
 COPY ./ntsim-ng /opt/dev/ntsim-ng/source
 COPY ./deploy/base/build_ntsim-ng.sh /opt/dev/ntsim-ng/build_ntsim-ng.sh
-COPY ./ntsim-ng/features/onos_cli_wrapper/onos-cli-wrapper.sh /usr/bin
+COPY ./ntsim-ng/features/onos_cli_wrapper/onos-cli-wrapper.sh /usr/local/bin/onos-cli-wrapper.sh
 RUN \
     cd /opt/dev/ntsim-ng && \
     sed -i '/argp/d' build_ntsim-ng.sh && \
