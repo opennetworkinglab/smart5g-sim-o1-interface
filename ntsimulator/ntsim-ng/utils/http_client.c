@@ -103,7 +103,7 @@ int http_request(const char *url, const char *username, const char* password, co
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
     }
 
-    log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"... ", method, url, send_data_good);
+    log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"... \n", method, url, send_data_good);
     CURLcode res = curl_easy_perform(curl);
     curl_slist_free_all(header);
 

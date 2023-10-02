@@ -62,6 +62,8 @@
 #define ENV_VAR_VES_ENDPOINT_USERNAME                   "VES_ENDPOINT_USERNAME"
 #define ENV_VAR_VES_ENDPOINT_PASSWORD                   "VES_ENDPOINT_PASSWORD"
 #define ENV_VAR_VES_ENDPOINT_CERTIFICATE                "VES_ENDPOINT_CERTIFICATE"
+#define ENV_VAR_VES_PM_DATA_SERVER_URL                  "VES_PM_DATA_SERVER_URL"
+#define ENV_VAR_VES_PM_DATA_FILE_NAME_PATTERN           "VES_PM_DATA_FILE_NAME_PATTERN"
 
 typedef enum {
     NTS_MODE_DEFAULT = 0,
@@ -141,6 +143,8 @@ typedef struct {
         char *username;
         char *password;
         char *certificate;
+        char *pm_data_server_url;
+        char *pm_data_file_name_pattern;
         bool port_absent;
     } ves_endpoint;
 } framework_environment_t;
