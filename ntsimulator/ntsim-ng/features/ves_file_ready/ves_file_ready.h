@@ -22,3 +22,6 @@
 int ves_file_ready_feature_get_status(void);
 int ves_file_ready_feature_start(sr_session_ctx_t *current_session);
 int ves_file_ready_feature_stop(void);
+int ves_file_ready_periodic_feature_get_status(void);
+int ves_file_ready_periodic_feature_start(sr_session_ctx_t *current_session);
+int ves_file_ready_periodic_feature_stop(void);

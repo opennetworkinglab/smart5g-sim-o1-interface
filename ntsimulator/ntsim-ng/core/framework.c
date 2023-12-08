@@ -315,6 +315,8 @@ static int framework_env_init(void) {
     framework_environment.ves_endpoint.username = getenv(ENV_VAR_VES_ENDPOINT_USERNAME) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_USERNAME)) : strdup("admin");
     framework_environment.ves_endpoint.password = getenv(ENV_VAR_VES_ENDPOINT_PASSWORD) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_PASSWORD)) : strdup("admin");
     framework_environment.ves_endpoint.certificate = getenv(ENV_VAR_VES_ENDPOINT_CERTIFICATE) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_CERTIFICATE)) : strdup("");
+    framework_environment.ves_endpoint.pm_data_server_url = getenv(ENV_VAR_VES_PM_DATA_SERVER_URL)  ? strdup(getenv(ENV_VAR_VES_PM_DATA_SERVER_URL)) : strdup("");
+    framework_environment.ves_endpoint.pm_data_file_name_pattern = getenv(ENV_VAR_VES_PM_DATA_FILE_NAME_PATTERN)  ? strdup(getenv(ENV_VAR_VES_PM_DATA_FILE_NAME_PATTERN)) : strdup("NONEXISTING");
     framework_environment.ves_endpoint.port_absent = (getenv(ENV_VAR_VES_ENDPOINT_PORT) == 0) ? true : false;
 
     log_add_verbose(2, "[framework-env] nts.manual = %d\n", framework_environment.nts.manual);

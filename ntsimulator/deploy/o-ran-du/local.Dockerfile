@@ -17,7 +17,7 @@
 #### DEVICE ####
 ################
 
-FROM o-ran-sc/nts-ng-base:latest
+FROM localhost:5000/nts-ng-base:latest
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
 
 # ntsim-ng configuration and deployment
