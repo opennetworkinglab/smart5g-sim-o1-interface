@@ -313,6 +313,23 @@ int network_function_run(void) {
                 }
             }
 
+            if(strstr(nf_function_control_string, "ves-file-ready-periodic") != 0) {
+                if(nf_function_control_string[0] == '1') {
+                    // start feature for periodic sending of the fileReady VES message
+                    rc = ves_file_ready_periodic_feature_start(session_running);
+                    if(rc != 0) {
+                        log_error("ves_file_ready_periodic_feature_start() failed\n");
+                    }
+                }
+                else if(nf_function_control_string[0] == '0') {
+                    // stop feature for periodic sending of the fileReady VES message
+                    rc = ves_file_ready_periodic_feature_stop();
+                    if(rc != 0) {
+                        log_error("ves_file_ready_periodic_feature_stop() failed\n");
+                    }
+                }
+            }
+
             if(strstr(nf_function_control_string, "ves-pnf-registration") != 0) {
                 if(nf_function_control_string[0] == '1') {
                     // check if PNF registration is enabled and send PNF registration message if so

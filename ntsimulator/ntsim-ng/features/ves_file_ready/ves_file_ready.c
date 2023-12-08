@@ -117,6 +117,37 @@ int ves_file_ready_periodic_feature_stop(void) {
     return NTS_ERR_OK;
 }
 
+int ves_file_ready_periodic_feature_get_status(void) {
+    return (ves_file_ready_periodic_subscription != 0);
+}
+
+int ves_file_ready_periodic_feature_start(sr_session_ctx_t *current_session) {
+    assert(current_session);
+    assert_session();
+
+    ves_periodic_stopsig = 0;
+
+    if(pthread_create(&ves_file_ready_periodic_thread, 0, ves_file_ready_periodic_update_thread_routine, 0)) {
+        log_error("could not create thread for periodic ves events\n");
+        return NTS_ERR_FAILED;
+    }
+
+    return NTS_ERR_OK;
+}
+
+int ves_file_ready_periodic_feature_stop(void) {
+    assert_session();
+
+    ves_periodic_stopsig = 1;
+
+    if(pthread_join(ves_file_ready_periodic_thread, NULL)) {
+        log_error("could not terminate thread for periodic ves events\n");
+        return NTS_ERR_FAILED;
+    }
+
+    return NTS_ERR_OK;
+}
+
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
     int ssh_base_port = 0;
     int tls_base_port = 0;
@@ -140,7 +171,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
     }
     else {
         ssh_base_port = framework_environment.host.ssh_base_port;
-        tls_base_port = framework_environment.host.tls_base_port;       
+        tls_base_port = framework_environment.host.tls_base_port;
     }
 
     int failed = 0;
@@ -186,7 +217,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
     if(SR_ERR_OK != rc) {
         return rc;
     }
-    
+
     if(failed != 0) {
         rc = sr_val_build_str_data(output[0], SR_ENUM_T, "%s", "ERROR");
     }
@@ -216,7 +247,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
-    
+
     if(cJSON_AddItemToObject(post_data_json, "event", event) == 0) {
         log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
@@ -229,7 +260,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
-    
+
     if(cJSON_AddItemToObject(event, "commonEventHeader", common_event_header) == 0) {
         log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
@@ -242,7 +273,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
-    
+
     if(cJSON_AddItemToObject(event, "notificationFields", file_ready_fields) == 0) {
         log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
@@ -388,6 +419,63 @@ static cJSON* ves_create_file_ready_fields(const char* file_location) {
     }
 
     return file_ready_fields;
+}
+
+static void *ves_file_ready_periodic_update_thread_routine(void *arg) {
+    sr_session_ctx_t *current_session = 0;
+
+    log_add_verbose(1, "starting periodic ves-file-ready\n");
+
+    int rc = sr_session_start(session_connection, SR_DS_RUNNING, &current_session);
+    if(rc != SR_ERR_OK) {
+        log_error("could not start sysrepo session\n");
+        pthread_exit(NULL);
+    }
+
+    char *log_path;
+    char curr_report_time[20];
+    char next_report_time[10];
+    struct tm *t;
+    time_t now, next;
+
+    while((!framework_sigint) && (!ves_periodic_stopsig)) {
+        sleep(1);
+
+        now = time(NULL);
+        next = now + 1; // next second
+
+        t = localtime(&now);
+        strftime(curr_report_time, sizeof(curr_report_time)-1, "A%Y%m%d.%H%M%S", t);
+
+        t = localtime(&next);
+        strftime(next_report_time, sizeof(next_report_time)-1, "%H%M%S", t);
+
+        // expected filename pattern: A20230515.070000+0100-070001+0100_ran-sim-0.xml.gz
+        asprintf(&log_path,
+                 "%s/%s+0100-%s+0100_%s.xml.gz",
+                 framework_environment.ves_endpoint.pm_data_server_url,
+                 curr_report_time,
+                 next_report_time,
+                 framework_environment.ves_endpoint.pm_data_file_name_pattern);
+
+        rc = ves_file_ready_send_message(current_session,
+                                         log_path,
+                                         0);
+        if(rc != NTS_ERR_OK) {
+            log_error("ves_file_ready_send_message failed\n");
+        }
+        else
+        {
+            log_add_verbose(1, "periodic ves-file-ready message sent successfully: %s\n", log_path);
+        }
+    }
+
+    rc = sr_session_stop(current_session);
+    if(rc != SR_ERR_OK) {
+        log_error("could not stop sysrepo session\n");
+    }
+
+    pthread_exit(NULL);
 }
 
 static void *ves_file_ready_periodic_update_thread_routine(void *arg) {

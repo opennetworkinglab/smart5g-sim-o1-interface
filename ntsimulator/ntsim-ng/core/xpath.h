@@ -56,6 +56,8 @@
 #define NTS_NF_ORAN_DU_MODULE                                   "o-ran-sc-du-hello-world"
 #define NTS_NF_ORAN_DU_PM_JOBS_SCHEMA_XPATH                     "/o-ran-sc-du-hello-world:network-function/performance-measurement-jobs"
 #define NTS_NF_ORAN_DU_SUBSCRIPTION_STREAMS_SCHEMA_XPATH        "/o-ran-sc-du-hello-world:network-function/subscription-streams"
+#define NTS_NF_ORAN_DU_CELL_ADMINISTRATIVE_STATE_XPATH          "/o-ran-sc-du-hello-world:network-function/distributed-unit-functions/cell/administrative-state"
+#define NTS_NF_ORAN_DU_CELL_ADMINISTRATIVE_STATE_PARAM_XPATH    "/o-ran-sc-du-hello-world:network-function/distributed-unit-functions[id='%s']/cell[id='%s']/administrative-state"
 
 #define IETF_KEYSTORE_MODULE                                    "ietf-keystore"
 #define IETF_KEYSTORE_SCHEMA_XPATH                              "/ietf-keystore:keystore"
