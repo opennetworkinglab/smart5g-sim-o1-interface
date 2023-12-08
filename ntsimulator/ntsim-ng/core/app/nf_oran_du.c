@@ -23,7 +23,9 @@
 #include "utils/nts_utils.h"
 #include "utils/rand_utils.h"
 #include "utils/http_client.h"
+#include "utils/debug_utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
 
@@ -169,11 +171,122 @@ int nf_oran_du_init(void) {
         return NTS_ERR_FAILED;
     }
 
+    log_add_verbose(1, "subscribing to changes on %s...\n", NTS_NF_ORAN_DU_CELL_ADMINISTRATIVE_STATE_XPATH);
+    rc = sr_module_change_subscribe(session_running, NTS_NF_ORAN_DU_MODULE, NTS_NF_ORAN_DU_CELL_ADMINISTRATIVE_STATE_XPATH,
+        administrative_state_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    if (rc != SR_ERR_OK) {
+        log_error("could not subscribe to module changes: %s\n", sr_strerror(rc));
+        return NTS_ERR_FAILED;
+    }
+
     return NTS_ERR_OK;
 }
 
 void nf_oran_du_free(void) {
     free(ves_template);
+}
+
+static void get_cell_id_from_xpath(char* dst, char* xpath) {
+    const char* cell_id = "cell[id='";
+    const char* admin_state = "']/administrative-state";
+
+    char* cell_id_pos = strstr(xpath, cell_id);
+    int first = cell_id_pos - xpath;
+
+    char* admin_state_pos = strstr(xpath, admin_state);
+    int second = admin_state_pos - xpath;
+
+    strncpy(dst, xpath + first + strlen(cell_id), second - first - strlen(cell_id));
+}
+
+static void change_cell_tx_power(const char* cell_id, const char* tx_power) {
+    char* onos_cli = getenv(ENV_VAR_ONOS_CLI_PATH);
+    if (onos_cli == NULL) {
+        log_error("Failed to get env variable (%s)\n", ENV_VAR_ONOS_CLI_PATH);
+        return;
+    }
+
+    char* ransim_service_address = getenv(ENV_VAR_RANSIM_SERVICE_ADDRESS);
+    if (ransim_service_address == NULL) {
+        log_error("Failed to get env variable (%s)\n", ENV_VAR_RANSIM_SERVICE_ADDRESS);
+        return;
+    }
+
+    char command[256] = {0};
+    sprintf(command, "%s %s %s %s", onos_cli, ransim_service_address, cell_id, tx_power);
+
+    if (system(command) != 0)
+    {
+        log_error("Failed to execute command: %s\n", command);
+    }
+}
+
+int administrative_state_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath,
+    sr_event_t event, uint32_t request_id, void *private_data) {
+
+    sr_change_iter_t *it = 0;
+    int rc = SR_ERR_OK;
+    sr_change_oper_t oper;
+    sr_val_t *old_value = 0;
+    sr_val_t *new_value = 0;
+
+    const char* off_tx_power = "-100";
+    const char* on_tx_power = "11";
+
+    if(event == SR_EV_CHANGE) {
+
+        log_add_verbose(1, "%s() : event (SR_EV_CHANGE)\n", __func__);
+
+        rc = sr_get_changes_iter(session, NTS_NF_ORAN_DU_CELL_ADMINISTRATIVE_STATE_XPATH, &it);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_get_changes_iter failed\n");
+            return SR_ERR_VALIDATION_FAILED;
+        }
+
+        while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
+
+            debug_print_sr_change(oper, old_value, new_value);
+
+            if(oper == SR_OP_MODIFIED) {
+
+                if (new_value->type != SR_ENUM_T) {
+                    log_error("Unsupported value type (%d)\n", (int)new_value->type);
+                    sr_free_val(old_value);
+                    sr_free_val(new_value);
+                    sr_free_change_iter(it);
+                    return SR_ERR_UNSUPPORTED;
+                }
+
+                char cell_id[64] = {0};
+                get_cell_id_from_xpath(cell_id, new_value->xpath);
+
+                if (strcmp(new_value->data.enum_val, "locked") == 0) {
+                    log_add_verbose(1, "Switching OFF cell with id=%s\n", cell_id);
+                    change_cell_tx_power(cell_id, off_tx_power);
+                }
+                else if (strcmp(new_value->data.enum_val, "unlocked") == 0) {
+                    log_add_verbose(1, "Switching ON cell with id=%s\n", cell_id);
+                    change_cell_tx_power(cell_id, on_tx_power);
+                }
+                else {
+                    log_error("Unsupported value (%s)\n", new_value->data.enum_val);
+                    sr_free_val(old_value);
+                    sr_free_val(new_value);
+                    sr_free_change_iter(it);
+                    return SR_ERR_UNSUPPORTED;
+                }
+            }
+            else {
+                log_add_verbose(1, "Unsupported operation type (%d)\n", (int)oper);
+            }
+
+            sr_free_val(old_value);
+            sr_free_val(new_value);
+        }
+
+        sr_free_change_iter(it);
+    }
+    return SR_ERR_OK;
 }
 
 static int subscription_streams_add(const char *id) {

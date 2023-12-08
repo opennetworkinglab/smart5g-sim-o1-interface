@@ -39,6 +39,15 @@ EXPOSE 21-22
 
 ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_O_RAN_O_DU
 
+# address of ran simulator
+ENV RANSIM_SERVICE_ADDRESS=ran-simulator.riab:5150
+
+# add path to onos-cli script
+ENV ONOS_CLI_PATH=/usr/local/bin/onos-cli-wrapper.sh
+
 # run
 WORKDIR /opt/dev/workspace
+# Uncomment those when you need gdb in a pod/container
+# RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb
+# RUN ulimit -c unlimited
 CMD ["/opt/dev/ntsim-ng/ntsim-ng", "-w/opt/dev/ntsim-ng", "--supervisor"]

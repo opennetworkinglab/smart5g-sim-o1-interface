@@ -52,10 +52,10 @@
         "random-generation-enabled": false,
 
         "pre-generated-operational-data": [
-            "../deploy/data/o-ran-sc-du-hello-world-operational.xml"
+            "../deploy/data/o-ran-sc-du-hello-world-operational-2cells.xml"
         ],
         "pre-generated-running-data": [
-            "../deploy/data/o-ran-sc-du-hello-world-running.xml"
+            "../deploy/data/o-ran-sc-du-hello-world-running-2cells.xml"
         ]
     },
 

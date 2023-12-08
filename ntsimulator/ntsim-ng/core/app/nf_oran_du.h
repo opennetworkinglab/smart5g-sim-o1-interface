@@ -17,5 +17,10 @@
 
 #pragma once
 
+#include <sysrepo.h>
+
 int nf_oran_du_init(void);
 void nf_oran_du_free(void);
+
+int administrative_state_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath,
+    sr_event_t event, uint32_t request_id, void *private_data);

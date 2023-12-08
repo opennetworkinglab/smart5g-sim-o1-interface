@@ -101,7 +101,7 @@ void debug_print_sr_change(sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new
         case SR_OP_MODIFIED:
             log_add_verbose(1, "MODIFIED: ");
             debug_print_sr_val(old_val);
-            log_add(1, "to ");
+            log_add(1, " to ");
             debug_print_sr_val(new_val);
             break;
         case SR_OP_MOVED:

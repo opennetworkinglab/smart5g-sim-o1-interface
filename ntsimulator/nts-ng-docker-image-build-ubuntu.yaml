@@ -75,6 +75,7 @@ services:
   ###################################################
   nts-ng-o-ran-du:
     image: ${DOCKER_REPO}nts-ng-o-ran-du:${NTS_BUILD_VERSION}
+    env_file: .env
     build:
       context: ./deploy/o-ran-du
       labels:
